@@ -37,7 +37,7 @@ def main():
     parser = argparse.ArgumentParser(description="PyTorch Object Detection Inference")
     parser.add_argument(
         "--config-file",
-        default="../configs/caffe2/e2e_mask_rcnn_R_50_FPN_1x_caffe2.yaml",
+        default="../configs/e2e_mask_rcnn_R_50_C4_1x.yaml",
         metavar="FILE",
         help="path to config file",
     )
@@ -45,7 +45,8 @@ def main():
     parser.add_argument(
         "opts",
         help="Modify config options using the command-line",
-        default=None,
+        default=["TEST.IMS_PER_BATCH", 2],
+        type=list,
         nargs=argparse.REMAINDER,
     )
 

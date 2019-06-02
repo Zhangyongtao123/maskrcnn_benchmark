@@ -7,10 +7,10 @@ MODEL:
   ROI_MASK_HEAD:
     PREDICTOR: "MaskRCNNC4Predictor"
     SHARE_BOX_FEATURE_EXTRACTOR: True
-  MASK_ON: False
+  MASK_ON: True
 DATASETS:
   TRAIN: ("coco_2017_train", )
-  TEST: ("coco_2017_minival",)
+  TEST: ("coco_2017_val",)
 SOLVER:
   BASE_LR: 0.01
   WEIGHT_DECAY: 0.0001

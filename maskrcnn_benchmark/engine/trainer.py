@@ -7,7 +7,8 @@ import time
 import torch
 import torch.distributed as dist
 
-from maskrcnn_benchmark.utils.comm import get_world_size
+from maskrcnn_benchmark.config import cfg
+from maskrcnn_benchmark.utils.comm import get_world_size, is_main_process
 # from maskrcnn_benchmark.utils.metric_logger import MetricLogger       # commented by zyt for tensorboardX
 
 from apex import amp
@@ -79,6 +80,20 @@ def do_train(
 
         loss_dict = model(images, targets)
 
+        # added for using tensorboardX add_graph()
+        # if iteration == 1 and is_main_process() == True:
+        #     # with torch.no_grad():
+        #     try:
+        #         from tensorboardX import SummaryWriter
+        #     except ImportError:
+        #         raise ImportError(
+        #             'To use tensorboard please install tensorboardX '
+        #             '[ pip install tensorflow tensorboardX ].'
+        #         )
+        #     timestamp = datetime.datetime.fromtimestamp(time.time()).strftime('%Y%m%d-%H:%M')
+        #     writer = SummaryWriter('{}-{}'.format(cfg.TENSORBOARD_EXPERIMENT, timestamp))
+        #     writer.add_graph(model, (loss_dict,))
+
         losses = sum(loss for loss in loss_dict.values())
 
         # reduce losses over all GPUs for logging purposes
@@ -100,7 +115,8 @@ def do_train(
         eta_seconds = meters.time.global_avg * (max_iter - iteration)
         eta_string = str(datetime.timedelta(seconds=int(eta_seconds)))
 
-        if iteration % 20 == 0 or iteration == max_iter:
+
+        if iteration % 50 == 0 or iteration == max_iter:
             logger.info(
                 meters.delimiter.join(
                     [

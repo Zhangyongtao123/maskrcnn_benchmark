@@ -34,7 +34,7 @@ from maskrcnn_benchmark.utils.miscellaneous import mkdir
 # See if we can use apex.DistributedDataParallel instead of the torch default,
 # and enable mixed-precision via apex.amp
 
-torch.cuda.set_device(0)
+# torch.cuda.set_device(0)
 try:
     from apex import amp
 except ImportError:
@@ -71,6 +71,7 @@ def train(cfg, local_rank, distributed, use_tensorboard=False):
     checkpointer = DetectronCheckpointer(   # checkpointer中包含model(已通过预训练模型进行更新)、cfg、logger、optimizer等
         cfg, model, optimizer, scheduler, output_dir, save_to_disk
     )
+
     # extra_checkpoint_data用于保存预训练模型中没有更新到自己模型里的参数，即在自己模型中没有对应的层的参数
     extra_checkpoint_data = checkpointer.load(cfg.MODEL.WEIGHT)
 
@@ -143,7 +144,7 @@ def main():
     parser = argparse.ArgumentParser(description="PyTorch Object Detection Training")
     parser.add_argument(
         "--config-file",
-        default="../configs/e2e_mask_rcnn_R_50_C4_1x.yaml",
+        default="../configs/e2e_faster_rcnn_R_50_FPN_1x.yaml",
         metavar="FILE",
         help="path to config file",
         type=str,
@@ -166,9 +167,9 @@ def main():
     parser.add_argument(
         "--opts",
         help="Modify config options using the command-line",
-        default=["SOLVER.IMS_PER_BATCH", 1, "SOLVER.BASE_LR", 0.005,
-                 "SOLVER.MAX_ITER", 360000, "SOLVER.STEPS", "(240000, 320000)",
-                 "TEST.IMS_PER_BATCH", 1, "MODEL.RPN.FPN_POST_NMS_TOP_N_TRAIN", 1000],
+        default=["SOLVER.IMS_PER_BATCH", 8, "SOLVER.BASE_LR", 0.01,
+                 "SOLVER.MAX_ITER", 180000, "SOLVER.STEPS", "(120000, 160000)",
+                 "TEST.IMS_PER_BATCH", 8, "MODEL.RPN.FPN_POST_NMS_TOP_N_TRAIN", 2000],
         # default=["MODEL.RPN.FPN_POST_NMS_TOP_N_TRAIN", 4000],
         type=list,
         nargs=argparse.REMAINDER,
@@ -177,10 +178,7 @@ def main():
     args = parser.parse_args()
 
     num_gpus = int(os.environ["WORLD_SIZE"]) if "WORLD_SIZE" in os.environ else 1
-    # args.distributed = num_gpus > 1
-    args.distributed = False
-    env_dist = os.environ
-    print(env_dist)
+    args.distributed = num_gpus > 1
     if args.distributed:
         torch.cuda.set_device(args.local_rank)
         torch.distributed.init_process_group(
