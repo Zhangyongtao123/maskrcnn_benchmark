@@ -42,7 +42,7 @@ except ImportError:
 
 
 # def train(cfg, local_rank, distributed):
-def train(cfg, local_rank, distributed, use_tensorboard=False):
+def train(cfg, local_rank, distributed, use_tensorboard=False, train_from_scratch=True):
     model = build_detection_model(cfg)
     device = torch.device(cfg.MODEL.DEVICE)
     model.to(device)
@@ -66,14 +66,13 @@ def train(cfg, local_rank, distributed, use_tensorboard=False):
     arguments["iteration"] = 0
 
     output_dir = cfg.OUTPUT_DIR
-
     save_to_disk = get_rank() == 0
     checkpointer = DetectronCheckpointer(   # checkpointer中包含model(已通过预训练模型进行更新)、cfg、logger、optimizer等
         cfg, model, optimizer, scheduler, output_dir, save_to_disk
     )
 
     # extra_checkpoint_data用于保存预训练模型中没有更新到自己模型里的参数，即在自己模型中没有对应的层的参数
-    extra_checkpoint_data = checkpointer.load(cfg.MODEL.WEIGHT)
+    extra_checkpoint_data = checkpointer.load(cfg.MODEL.WEIGHT, train_from_scratch)
 
     arguments.update(extra_checkpoint_data)
 
@@ -165,9 +164,16 @@ def main():
         default=True
     )
     parser.add_argument(
+        "--train_from_scratch",
+        dest="train_from_scratch",
+        help="train_from_scratch",
+        action="store_true",
+        default=True
+    )
+    parser.add_argument(
         "--opts",
         help="Modify config options using the command-line",
-        default=["SOLVER.IMS_PER_BATCH", 8, "SOLVER.BASE_LR", 0.01,
+        default=["SOLVER.IMS_PER_BATCH", 1, "SOLVER.BASE_LR", 0.01,
                  "SOLVER.MAX_ITER", 180000, "SOLVER.STEPS", "(120000, 160000)",
                  "TEST.IMS_PER_BATCH", 8, "MODEL.RPN.FPN_POST_NMS_TOP_N_TRAIN", 2000],
         # default=["MODEL.RPN.FPN_POST_NMS_TOP_N_TRAIN", 4000],
@@ -213,7 +219,8 @@ def main():
         cfg=cfg,
         local_rank=args.local_rank,
         distributed=args.distributed,
-        use_tensorboard=args.use_tensorboard
+        use_tensorboard=args.use_tensorboard,
+        train_from_scratch=args.train_from_scratch
     )
 
     if not args.skip_test:
